@@ -2,3 +2,4 @@ config.codekit
 .DS_Store
 usw-notes.rtf
 bower_components
+sass/.sass-cache

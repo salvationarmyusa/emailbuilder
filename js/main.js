@@ -1,19 +1,9 @@
 var saemail = window.saemail || {}
 
 saemail.config = {
-
-    api: {
-        postal: "//public.api.gdos.salvationarmy.org/geocode/postal?",
-        search: "//public.api.gdos.salvationarmy.org/search?",
-        geocode: "https://maps.googleapis.com/maps/api/geocode/json?"
-    },
-    results: $('.zip-results--container'),
-    opaqueItem: $('.js-opacity'),
-    trigger: $('.js-trigger'),
-    storedResults: localStorage.getItem("zipResults"),
-    navbar: $('.navbar'),
-    url: '//' + location.host + location.pathname,
-    locations: []
+    editableTextNodes: [],
+    editableImages: [],
+    mediumElements: []
 }
 
 saemail.controller = {
@@ -24,11 +14,9 @@ saemail.controller = {
 
     defineEditableTextNodes: function() {
 
-        editableTextNodes = [];
-
         $('.right_side table *').each(function(){
             if($(this).text().length){
-                editableTextNodes.push($(this));
+                saemail.config.editableTextNodes.push($(this));
             }
         });
 
@@ -36,23 +24,23 @@ saemail.controller = {
 
     defineEditableImages: function() {
 
-        editableImages = [];
-
         $('.right_side img').each(function(){
             if($(this).css('display') !== 'none'){
-               editableImages.push($(this));
+               saemail.config.editableImages.push($(this));
             }
         });
 
-        console.log(editableImages);
+        $('.right_side td, .right_side tr, .right_side div, .right_side span').each(function(){
+            if($(this).css('background-image') !== 'none') {
+               saemail.config.editableImages.push($(this));
+            }
+        });
 
     },
 
     addEditableClass: function() {
 
-        mediumElements = [];
-
-        $.each(editableTextNodes, function( i, value ) {
+        $.each(saemail.config.editableTextNodes, function( i, value ) {
           var editor = new MediumEditor(value, {
                 paste: {
                     forcePlainText: true
@@ -62,19 +50,87 @@ saemail.controller = {
                     buttons: ['bold', 'italic', 'anchor', 'image'],
                 }
             });
-          mediumElements.push(editor);
+          saemail.config.mediumElements.push(editor);
         });
 
     },
 
     removeEditableClass: function() {
 
-        $.each(editableTextNodes, function( i, element ) {
+        $.each(saemail.config.editableTextNodes, function( i, element ) {
           element.removeClass('editable').removeAttr( 'contentEditable data-editable spellcheck data-medium-editor-element role aria-multiline medium-editor-index data-placeholder' );
         });
 
-        $.each(mediumElements, function( i, node ) {
+        $.each(saemail.config.mediumElements, function( i, node ) {
             node.destroy();
+        });
+
+    },
+
+    populateImageInputFields: function() {
+
+        $.each(saemail.config.editableImages, function( i, element) {
+
+             var $attr = $(this).data('img');
+
+             if($(this).is('img')) {
+                $image = $(this).attr('src');
+                $alt = $(this).attr('alt');
+            } else {
+                $bg = $(this).css('background-image');
+                $image = $bg.replace('url(','').replace(')','');
+                $alt = null;
+            }
+
+            if($image == null) {
+                $image = 'http://';
+                $alt = null;
+            }
+
+            if($alt) {
+
+                $('<label>Image ' + i + ' URL</label><input type="text" class="img-edit" data-edit="'+ $attr +'" value="' + $image + '"><label>Alt Text</label><input type="text" class="img-edit" data-alt="'+ $attr +'" value="' + $alt + '"><hr />').appendTo('.left_menu_images');
+            } else {
+
+                $('<label>Image ' + i + ' URL</label><input type="text" class="img-edit" data-edit="'+ $attr +'" value="' + $image + '"><hr />').appendTo('.left_menu_images');
+            }
+
+        });
+
+    },
+
+    scrollToImage: function() {
+
+        $('.img-edit').each(function(){
+
+            $(this).on('click', function(e){
+                e.preventDefault();
+                $('[data-img]').each(function(){
+                    $(this).removeClass('active');
+                });
+                var attr = $(this).data('edit');
+                var target = $('body').find('[data-img="'+ attr +'"]');
+                target.addClass('active');
+                $('html, body').animate({
+                    scrollTop: $(target).offset().top - 100
+                }, 800);
+            });
+
+            $(this).keyup(function(){
+               var $target = $(this).data('edit');
+               var $img = $(this).val();
+                $('td').each(function(){
+                    if($(this).data('img') == $target) {
+                        $(this).css('background-image','url('+$img+')');
+                        $(this).attr('background',$img);
+                    }
+                });
+                $('img').each(function(){
+                    if($(this).data('img') == $target) {
+                        $(this).attr('src',$img);
+                    }
+                });
+            });
         });
 
     },
@@ -87,6 +143,19 @@ saemail.controller = {
         range.selectNodeContents(element);
         selection.removeAllRanges();
         selection.addRange(range);
+    },
+
+    exportCode: function() {
+        var filteredContents = $('.right_side').html();
+        $('<a class="close"><i class="fa fa-times-circle-o"></i></a>').appendTo('body');
+        $("<pre />", {
+                "html":filteredContents.replace(/[<>]/g, function(m) { return {'<':'&lt;','>':'&gt;'}[m]})
+                    .replace(/((ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?)/gi,'<a href="$1">$1</a>') +
+                        '\n&lt;/html>',
+                "class": "prettyprint"
+            }).appendTo(".html-output");
+
+            prettyPrint();
     }
 
 }
@@ -98,6 +167,8 @@ $(document).ready(function(){
     saemail.controller.defineEditableImages();
 
     saemail.controller.addEditableClass();
+    saemail.controller.populateImageInputFields();
+    saemail.controller.scrollToImage();
 
     // $('table').hover(
     //   function() {
@@ -126,19 +197,19 @@ $(document).ready(function(){
     $('.view-source').on('click', function(e){
         e.preventDefault();
         saemail.controller.removeEditableClass();
-        var filteredContents = $('.right_side').html();
-        $('<a class="close"><i class="fa fa-times-circle-o"></i></a>').appendTo('body');
-        $("<pre />", {
-				"html":filteredContents.replace(/[<>]/g, function(m) { return {'<':'&lt;','>':'&gt;'}[m]})
-					.replace(/((ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?)/gi,'<a href="$1">$1</a>') +
-						'\n&lt;/html>',
-				"class": "prettyprint"
-			}).appendTo(".html-output");
-
-			prettyPrint();
+        saemail.controller.exportCode();
 
        $('.html-output').addClass('shown');
        $('.site-wrap').addClass('transparent');
+    });
+
+    $('.download-source').on('click', function(e){
+        e.preventDefault();
+        saemail.controller.exportCode();
+        var today = new Date();
+        var UTC_TIMESTAMP = today.toLocaleString();
+        var code = $('.html-output').text();
+        download(code, "code-"+ UTC_TIMESTAMP +".txt", "text/plain");
     });
 
     $(document).mouseup(function (e)
@@ -158,69 +229,6 @@ $(document).ready(function(){
     $('.html-output').on('click', function(){
     	//$(this).selectText();
     });
-
-    var i = 1;
-
-    $('[data-img]').each(function(){
-    	$attr = $(this).data('img');
-    	if($(this).is('img')) {
-    		$image = $(this).attr('src');
-            $alt = $(this).attr('alt');
-    	} else {
-    		$bg = $(this).css('background-image');
-    		$image = $bg.replace('url(','').replace(')','');
-            $alt = null;
-    	}
-
-    	if($image == null) {
-    		$image = 'http://';
-            $alt = null;
-    	}
-
-        if($alt) {
-
-            $('<label>Image ' + i + ' URL</label><input type="text" class="img-edit" data-edit="'+ $attr +'" value="' + $image + '"><label>Alt Text</label><input type="text" class="img-edit" data-alt="'+ $attr +'" value="' + $alt + '"><hr />').appendTo('.left_menu_images');
-        } else {
-
-            $('<label>Image ' + i + ' URL</label><input type="text" class="img-edit" data-edit="'+ $attr +'" value="' + $image + '"><hr />').appendTo('.left_menu_images');
-        }
-
-        i++;
-     	
-    	
-    });
-
-    $('.img-edit').each(function(){
-
-    	$(this).on('click', function(e){
-    		e.preventDefault();
-    		$('[data-img]').each(function(){
-    			$(this).removeClass('active');
-    		});
-			var attr = $(this).data('edit');
-			var target = $('body').find('[data-img="'+ attr +'"]');
-			target.addClass('active');
-			$('html, body').animate({
-				scrollTop: $(target).offset().top - 100
-			}, 800);
-    	});
-
-    	$(this).keyup(function(){
-    		var $target = $(this).data('edit');
-    		var $img = $(this).val();
-	    		$('td').each(function(){
-	    			if($(this).data('img') == $target) {
-	    				$(this).css('background-image','url('+$img+')');
-	    				$(this).attr('background',$img);
-	    			}
-	    		});
-	    		$('img').each(function(){
-	    			if($(this).data('img') == $target) {
-	    				$(this).attr('src',$img);
-	    			}
-	    		});
-    		});
-    	});
 
 
     });
