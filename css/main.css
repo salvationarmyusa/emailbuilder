@@ -137,11 +137,25 @@ li.L9 {
 /* ==========================================================================
    Author's custom styles
    ========================================================================== */
+@-webkit-keyframes rotate {
+  from {
+    -webkit-transform: rotate(0deg) translate3d(0, 0, 0);
+            transform: rotate(0deg) translate3d(0, 0, 0); }
+  to {
+    -webkit-transform: rotate(359deg) translate3d(0, 0, 0);
+            transform: rotate(359deg) translate3d(0, 0, 0); } }
 @keyframes rotate {
   from {
-    transform: rotate(0deg) translate3d(0, 0, 0); }
+    -webkit-transform: rotate(0deg) translate3d(0, 0, 0);
+            transform: rotate(0deg) translate3d(0, 0, 0); }
   to {
-    transform: rotate(359deg) translate3d(0, 0, 0); } }
+    -webkit-transform: rotate(359deg) translate3d(0, 0, 0);
+            transform: rotate(359deg) translate3d(0, 0, 0); } }
+@-webkit-keyframes opacity {
+  from {
+    opacity: 0; }
+  to {
+    opacity: 1; } }
 @keyframes opacity {
   from {
     opacity: 0; }
@@ -171,7 +185,8 @@ li.L9 {
   border-bottom: 6px solid #e51d2e;
   border-left: 6px solid #e51d2e;
   border-radius: 100%;
-  animation: rotate 1s infinite linear, opacity 1s forwards;
+  -webkit-animation: rotate 1s infinite linear, opacity 1s forwards;
+          animation: rotate 1s infinite linear, opacity 1s forwards;
   opacity: 0; }
 
 .transparent {
@@ -223,7 +238,8 @@ iframe {
   .left_menu a {
     color: white;
     text-decoration: none;
-    transition: all .35s; }
+    -webkit-transition: all .35s;
+            transition: all .35s; }
     .left_menu a.toggle {
       background: #446473;
       text-transform: uppercase;
@@ -273,10 +289,11 @@ iframe {
       left: -15px;
       top: -15px;
       opacity: 0;
-      transition: all .15s;
+      -webkit-transition: all .15s;
+              transition: all .15s;
       color: black; }
   .right_side img.active, .right_side td.active {
-    outline: 5px solid #ccc; }
+    outline: 5px dashed #dc2c30; }
   .right_side table:not(.navigation_banner) {
     position: relative; }
   .right_side table .delete {
@@ -293,13 +310,79 @@ iframe {
     line-height: 30px;
     color: white;
     font-weight: bold;
-    transition: all .35s;
+    -webkit-transition: all .35s;
+            transition: all .35s;
     cursor: pointer;
     z-index: 9999; }
     .right_side table .delete:hover {
       background-color: #dc2c30; }
     .right_side table .delete:after {
       display: none; }
+  .right_side .relative {
+    position: relative; }
+
+@-webkit-keyframes slideOut {
+  from {
+    -webkit-transform: translate3d(150%, 0, 0);
+            transform: translate3d(150%, 0, 0); }
+  to {
+    -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0); } }
+
+@keyframes slideOut {
+  from {
+    -webkit-transform: translate3d(150%, 0, 0);
+            transform: translate3d(150%, 0, 0); }
+  to {
+    -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0); } }
+@-webkit-keyframes slideBack {
+  from {
+    -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0); }
+  to {
+    -webkit-transform: translate3d(150%, 0, 0);
+            transform: translate3d(150%, 0, 0); } }
+@keyframes slideBack {
+  from {
+    -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0); }
+  to {
+    -webkit-transform: translate3d(150%, 0, 0);
+            transform: translate3d(150%, 0, 0); } }
+.link-editor {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 999;
+  box-shadow: 0 0 5px #ccc;
+  background: white;
+  padding: 10px;
+  -webkit-animation: slideOut .5s forwards;
+          animation: slideOut .5s forwards;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: #888; }
+  .link-editor.slide-back {
+    -webkit-animation: slideBack .5s forwards;
+            animation: slideBack .5s forwards; }
+  .link-editor input {
+    color: #333;
+    padding: 10px;
+    border: 1px solid black; }
+  .link-editor input, .link-editor .fa {
+    margin: 0 5px 0 0;
+    display: inline-block;
+    vertical-align: middle; }
+  .link-editor .fa {
+    background: black;
+    color: white;
+    padding: 12px 10px;
+    -webkit-transition: all .35s;
+            transition: all .35s;
+    cursor: pointer; }
+    .link-editor .fa:hover {
+      background-color: #dc2c30; }
 
 .html-output {
   position: absolute;
@@ -312,14 +395,17 @@ iframe {
   top: 2%;
   opacity: 0;
   z-index: -5;
-  transition: opacity .5s;
+  -webkit-transition: opacity .5s;
+          transition: opacity .5s;
   font: 14px/1.6 Monaco, Courier, MonoSpace;
   border: 5px solid white; }
   .html-output.shown {
     opacity: 1;
     z-index: 2;
-    transition: z-index 2s;
-    transition: opacity .5s; }
+    -webkit-transition: z-index 2s;
+            transition: z-index 2s;
+    -webkit-transition: opacity .5s;
+            transition: opacity .5s; }
   .html-output pre {
     word-wrap: break-word; }
     .html-output pre a {
@@ -332,7 +418,8 @@ iframe {
   right: 10px;
   top: 10px;
   cursor: pointer;
-  transition: all .35s;
+  -webkit-transition: all .35s;
+          transition: all .35s;
   z-index: 99; }
   .close:hover {
     color: #ccc; }

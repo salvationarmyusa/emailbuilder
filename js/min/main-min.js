@@ -2,6 +2,7 @@ var saemail = window.saemail || {}
 
 saemail.config = {
     editableTextNodes: [],
+    editableLinks: [],
     editableImages: [],
     mediumElements: [],
     removableElements: [],
@@ -10,16 +11,22 @@ saemail.config = {
 saemail.controller = {
 
     init: function() {
-       //$('body').addClass('loading');
+       $('body').addClass('loading');
     },
 
     defineEditableTextNodes: function() {
 
-        $('.right_side table *').each(function(){
+        $('.right_side span, .right_side td, .right_side a').each(function(i){
             if($(this).text().length){
-                saemail.config.editableTextNodes.push($(this));
+                $(this).addClass('editable' + i);
+                saemail.config.editableTextNodes.push( {
+                    className: $(this).context.className,
+                    nodeName: $(this).context.nodeName
+                });
             }
         });
+        var collection = JSON.stringify(saemail.config.editableTextNodes);
+        localStorage.setItem('editable', collection);
 
     },
 
@@ -46,44 +53,68 @@ saemail.controller = {
     defineRemovableElements: function() {
 
         $('.main_container > table').each(function(){
-            saemail.config.removableElements.push($(this));
+            saemail.config.removableElements.push( {
+                className: $(this).context.className,
+                nodeName: $(this).context.nodeName
+            });
         });
+
+        var collection = JSON.stringify(saemail.config.removableElements);
+        localStorage.setItem('removable', collection);
 
     },
 
     addEditableClass: function() {
 
-        $.each(saemail.config.editableTextNodes, function( i, value ) {
-          var editor = new MediumEditor(value, {
-                paste: {
-                    forcePlainText: true
-                },
-                toolbar: {
-                    allowMultiParagraphSelection: true,
-                    buttons: ['bold', 'italic', 'anchor', 'image'],
-                }
+        var editable = JSON.parse(localStorage.getItem("editable"));
+        $.each(editable, function( i, value ) {
+            $('.' + value.className).prop('contentEditable',true);
+        });
+    },
+
+    editWorkflow: function() {
+        var editable = JSON.parse(localStorage.getItem("editable"));
+        $.each(editable, function( i, value ) {
+            $('.' + value.className).removeClass('editing');
+            $('.' + value.className).on('click', function(){
+                $(this).addClass('editing');
             });
-          saemail.config.mediumElements.push(editor);
+        });
+    },
+
+    removeEditWorkflow: function() {
+        var editable = JSON.parse(localStorage.getItem("editable"));
+        $.each(editable, function( i, value ) {
+            $('.' + value.className).removeClass('editing');
+        });
+    },
+
+    defineLinks: function() {
+        var editable = JSON.parse(localStorage.getItem("editable"));
+        $.each(editable, function( i, value ) {
+            if(value.nodeName == "A") {
+                saemail.config.editableLinks.push($('.' + value.className));
+            }
         });
 
+        var links = JSON.stringify(saemail.config.editableLinks);
+        localStorage.setItem('links', links);
     },
 
     removeEditableClass: function() {
 
-        $.each(saemail.config.editableTextNodes, function( i, element ) {
-          element.removeClass('editable').removeAttr( 'contentEditable data-editable spellcheck data-medium-editor-element role aria-multiline medium-editor-index data-placeholder' );
-        });
-
-        $.each(saemail.config.mediumElements, function( i, node ) {
-            node.destroy();
+        var editable = JSON.parse(localStorage.getItem("editable"));
+        $.each(editable, function( i, value ) {
+            $('.' + value.className).prop('contentEditable',false);
         });
 
     },
 
     addRemovableClass: function() {
 
-        $.each(saemail.config.removableElements, function( i, element ) {
-            element.hover(
+        var removable = JSON.parse(localStorage.getItem("removable"));
+        $.each(removable, function( i, value ) {
+            $('.' + value.className).hover(
               function() {
                 $('<a class="delete fa fa-trash-o"></a>').prependTo($(this));
               }, function() {
@@ -126,6 +157,36 @@ saemail.controller = {
                 $('<label>Background Image ' + num + ' URL</label><input type="text" class="img-edit" data-edit="'+ $attr +'" value="' + $image + '"><hr />').appendTo('.left_menu_images');
             }
 
+        });
+
+    },
+
+    editLinks: function() {
+
+        var editable = JSON.parse(localStorage.getItem("links"));
+        $.each(editable, function( i, value ) {
+            $(value.selector).on('click', function(e){
+                e.preventDefault();
+                $('.link-editor').remove();
+                $(this).addClass('relative');
+                var link = $(this).attr('href');
+                var text = $(this).text();
+                $('body').append('<div class="link-editor">"' + text + '"" link:<br ><input class="edit-link" type="text" value="'+ link + '"><a class="save-link"><i class="fa fa-check"></i></a><a class="delete-link"><i class="fa fa-ban"></i></a></div>');
+                
+                $('.save-link').on('click', function(e){
+                    e.preventDefault();
+                    var link = $('.edit-link').val();
+                    $(value.selector).attr('href',link);
+                    $('.link-editor').addClass('slide-back');
+                });
+
+                $('.delete-link').on('click', function(e){
+                    e.preventDefault();
+                    $('.edit-link').attr('href','http://').val('http://');
+                    $(value.selector).attr('href', 'http://');
+                })
+
+            });
         });
 
     },
@@ -197,13 +258,23 @@ $(document).ready(function(){
 
     saemail.controller.init();
 
-    saemail.controller.defineEditableTextNodes();
+
+    $.when( saemail.controller.defineEditableTextNodes() ).done(function() {
+        saemail.controller.addEditableClass();
+        saemail.controller.editWorkflow();
+        $.when( saemail.controller.defineLinks() ).done(function(){
+            saemail.controller.editLinks();
+        });
+    });
     saemail.controller.defineEditableImages();
 
-    saemail.controller.addEditableClass();
-    saemail.controller.populateImageInputFields();
-    saemail.controller.scrollToImage();
+    
+    $.when( saemail.controller.populateImageInputFields() ).done(function(){
+        saemail.controller.scrollToImage();
+        $('body').removeClass('loading');
+    });
 
+    
     saemail.controller.defineRemovableElements();
     saemail.controller.addRemovableClass();
 
@@ -223,6 +294,7 @@ $(document).ready(function(){
 
     $('.view-source').on('click', function(e){
         e.preventDefault();
+        saemail.controller.removeEditWorkflow();
         saemail.controller.removeEditableClass();
         saemail.controller.exportCode();
 
@@ -232,6 +304,7 @@ $(document).ready(function(){
 
     $('.download-source').on('click', function(e){
         e.preventDefault();
+        saemail.controller.removeEditWorkflow();
         saemail.controller.exportCode();
         var today = new Date();
         var UTC_TIMESTAMP = today.toLocaleString();
@@ -250,6 +323,7 @@ $(document).ready(function(){
 			$('.html-output').removeClass('shown').empty();
 	       	$('.site-wrap').removeClass('transparent');
 	       	$('.close').remove();
+            saemail.controller.removeEditWorkflow();
             saemail.controller.addEditableClass();
             saemail.controller.defineRemovableElements();
             saemail.controller.addRemovableClass();
@@ -260,7 +334,7 @@ $(document).ready(function(){
     	saemail.controller.select($(this));
     });
 
-    $('body').removeClass('loading');
+    
 
 });
 
